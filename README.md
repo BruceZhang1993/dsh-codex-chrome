@@ -71,19 +71,27 @@ DSH ──mcp-client(stdio)──▶ bin/chrome-mcp.mjs ──MCP(stdio) + _meta
 
 ## Install
 
-```bash
-# Install as a bundle into a DSH profile (desktop shown here)
-dsh plugin install ~/Projects/dsh-codex-chrome
+### DSH Desktop
+
+Open the plugin manager and install the bundle from this directory, or from a registry once
+published. Desktop profiles are managed exclusively by the app, so
+`dsh plugin --profile desktop add …` is refused by design.
+
+### CLI profiles
+
+```sh
+dsh plugin --profile web add /absolute/path/to/dsh-codex-chrome
 ```
 
-Or do the same thing by hand in `~/.dsh/profiles/<profile>/package.json`:
+Either way the profile's `package.json` ends up with the dependency and the bundle entry; doing it by
+hand is equivalent:
 
 ```json
 "dependencies": { "dsh-codex-chrome": "link:/path/to/dsh-codex-chrome" }
 "dsh": { "profile": { "bundles": [ "…", "dsh-codex-chrome" ] } }
 ```
 
-then run `pnpm install` in the profile directory. After a reload the model sees the eleven
+then run `pnpm install` in the profile directory. After a restart the model sees the eleven
 `mcp__chrome__*` tools and the `control-chrome` skill.
 
 ## Tools

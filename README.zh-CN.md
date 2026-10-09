@@ -72,19 +72,25 @@ DSH ──mcp-client(stdio)──▶ bin/chrome-mcp.mjs ──MCP(stdio)+_meta�
 
 ## 安装
 
-```bash
-# 作为 bundle 安装到目标 DSH profile（以 desktop 为例）
-dsh plugin install ~/Projects/dsh-codex-chrome
+### DSH Desktop
+
+在插件管理器里从这个目录安装 bundle（发布到 registry 之后也可以从 registry 安装）。
+Desktop profile 由应用独占管理，因此 `dsh plugin --profile desktop add …` 会被拒绝。
+
+### CLI profile
+
+```sh
+dsh plugin --profile web add /absolute/path/to/dsh-codex-chrome
 ```
 
-也可以手工做等价操作：在 `~/.dsh/profiles/<profile>/package.json` 里加依赖与 bundle
+两种方式最终都会在该 profile 的 `package.json` 里写入依赖与 bundle 条目；手工做等价操作也可以：
 
 ```json
 "dependencies": { "dsh-codex-chrome": "link:/path/to/dsh-codex-chrome" }
 "dsh": { "profile": { "bundles": [ "…", "dsh-codex-chrome" ] } }
 ```
 
-然后在 profile 目录执行 `pnpm install`。重载后模型即可看到 11 个 `mcp__chrome__*` 工具与
+然后在 profile 目录执行 `pnpm install`。重启后模型即可看到 11 个 `mcp__chrome__*` 工具与
 `control-chrome` skill。
 
 ## 工具
