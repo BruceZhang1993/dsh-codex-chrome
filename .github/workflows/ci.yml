@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No `npm ci`: the package ships zero dependencies, and its only runtime
+      # is the Codex/ChatGPT install already present on the user's machine.
+      - name: Static package checks
+        run: node scripts/check-package.mjs
+
+      - name: Unit and MCP handshake tests
+        # test/handshake.test.mjs speaks the real wire protocol to the launcher.
+        # Without Codex on the runner, `chrome_status` must come back as a
+        # structured error result — which is exactly what it asserts.
+        run: node --test
+
+  # `scripts/doctor.mjs` and `scripts/smoke.mjs` need a desktop session, the
+  # Codex `node_repl` runtime, the ChatGPT browser extension and a running
+  # browser, so they stay local checks. Run them yourself:
+  #   node scripts/doctor.mjs --deep
+  #   node scripts/smoke.mjs

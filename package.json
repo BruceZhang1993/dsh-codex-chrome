@@ -1,0 +1,64 @@
+{
+  "name": "dsh-codex-chrome",
+  "version": "0.1.0",
+  "description": "Control the user's own Chrome (or Edge/Brave/Vivaldi/Opera) from DeepSeek Harness by reusing the OpenAI Codex `chrome` plugin's browser runtime: tabs, logged-in sessions, accessibility trees, screenshots and input, exposed as native DSH MCP tools plus a bundled skill.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./launcher": "./bin/chrome-mcp.mjs",
+    "./session": "./lib/browser-session.mjs",
+    "./skills/*": "./skills/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "skills",
+    "scripts",
+    "docs",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE",
+    "THIRD_PARTY.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "check": "node scripts/check-package.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "test": "node --test"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "codex",
+    "chrome",
+    "browser",
+    "browser-automation",
+    "mcp",
+    "mcp-server",
+    "chatgpt",
+    "playwright",
+    "accessibility",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BruceZhang1993/dsh-codex-chrome.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BruceZhang1993/dsh-codex-chrome/issues"
+  },
+  "homepage": "https://github.com/BruceZhang1993/dsh-codex-chrome#readme"
+}

@@ -1,0 +1,67 @@
+# dsh-codex-chrome — DSH bundle patch layer.
+#
+# This bundle migrates the OpenAI Codex `chrome@openai-bundled` plugin (shipped
+# enabled in ~/.codex/config.toml) into DeepSeek Harness.
+#
+# What the Codex plugin actually is
+# ---------------------------------
+# `chrome@openai-bundled` is NOT an MCP server. It is
+#   1. a skill (`skills/control-chrome/SKILL.md`), and
+#   2. a per-turn hook that calls the `node_repl` MCP tool `turn_ended`, and
+#   3. `scripts/browser-client.mjs`, a client library that drives the real work
+#      through a TRUSTED SERVICE (`scripts/browser-service.mjs`) hosted by the
+#      `node_repl` MCP server — the same server Codex registers as
+#      `[mcp_servers.node_repl]`.
+#
+# `browser-client.mjs` calls `globalThis.nodeRepl.rpc("browser", ...)`, and the
+# service refuses to run without privileged Node REPL capabilities
+# (`nativePipe`, `addTurnEndedHandler`, tool-injected turn metadata, ...).
+# Those capabilities exist only inside the Codex `node_repl` host, so this
+# bundle does not reimplement them: it reuses the vendor runtime as-is.
+#
+# Why an extra bridge process
+# ---------------------------
+# The bridge must inject `_meta["x-codex-turn-metadata"] = {session_id, turn_id}`
+# into every `tools/call`. The browser service reads that metadata from
+# `nodeRepl.requestMeta` and hard-fails with "Missing required Codex turn
+# metadata: session_id, turn_id" without it. `@deepseek-ai/dsh-mcp-client` has no
+# per-call `_meta` support (its only call site is `client.callTool({name,
+# arguments}, {...})`), so `bin/chrome-mcp.mjs` fronts `node_repl`, injects the
+# metadata itself, and republishes the Codex browser API as native DSH tools.
+#
+# Path resolution: `!!js` expressions are evaluated against the boot tree's
+# context, whose `baseUrl` is the PROFILE directory (where cordis.yml lives).
+# Resolving the launcher through a createRequire anchored at the profile's
+# package.json therefore works in any profile under any $DSH_HOME and survives
+# the pnpm store layout, with no hard-coded paths. `process.execPath` is the
+# host executable: `node` for the CLI/headless apps, or the Electron executable
+# for DSH Desktop. The child-only `ELECTRON_RUN_AS_NODE` flag makes Electron run
+# the launcher as Node; ordinary Node ignores it.
+#
+# Desktop session variables the bridge needs (`DISPLAY`, `WAYLAND_DISPLAY`,
+# `XAUTHORITY`, `XDG_RUNTIME_DIR`, `DBUS_SESSION_BUS_ADDRESS`, `HOME`) survive
+# the mcp-client credential scrub, so they are deliberately *not* restated here.
+# Only names matching /KEY|PASSWORD|SECRET|TOKEN/i and `DSH_*` are scrubbed.
+# `CODEX_HOME` is not scrubbed either, but it is pinned explicitly below so the
+# bridge finds the Codex plugin cache even if a launcher strips it.
+
+- insert:
+    - id: mcp-codex-chrome
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: chrome
+        transport: stdio
+        command: !!js process.execPath
+        args:
+          - !!js "process.getBuiltinModule('node:module').createRequire(new URL('package.json', baseUrl)).resolve('dsh-codex-chrome/launcher')"
+        env:
+          ELECTRON_RUN_AS_NODE: '1'
+          CODEX_HOME: !!js "process.env.CODEX_HOME || process.getBuiltinModule('node:os').homedir() + '/.codex'"
+        # Driving a real browser is not a 60 s operation: a first Chrome
+        # extension handshake, a page load, or an accessibility-tree capture can
+        # each take longer, and `chrome_act` may batch several actions.
+        toolCallTimeoutMs: 300000
+        failOnStartupError: false
+
+    - id: dsh-codex-chrome
+      name: 'dsh-codex-chrome'
