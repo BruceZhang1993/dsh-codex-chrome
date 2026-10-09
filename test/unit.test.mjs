@@ -13,6 +13,18 @@ import { fileURLToPath } from 'node:url';
 import { codexHome, nodeReplEnv, resolvePlugin, resolveRuntime } from '../lib/paths.mjs';
 import { RESULT_MARKER, TOOL_DEFINITIONS, parseResult, sniffMimeType } from '../lib/tools.mjs';
 import { BUNDLED_SKILL_NAME, loadBundledSkill, parseSkillDocument } from '../lib/skill.mjs';
+import { isDisconnected } from '../lib/browser-session.mjs';
+
+test('isDisconnected spots a binding killed by a Chrome/extension restart', () => {
+  // The vendor reports this for every call once Chrome replaced the extension host.
+  assert.equal(isDisconnected(new Error('Browser is not available: 1')), true);
+  // Another agent session owns that tab; a rebind cannot release it.
+  assert.equal(isDisconnected(new Error('Tab 7 is already part of browser session abc')), false);
+  // Ordinary page failures may have had side effects and must never be replayed.
+  assert.equal(isDisconnected(new Error('Playwright selector deadline exceeded')), false);
+  assert.equal(isDisconnected(new Error('Accessibility element 7 is stale or missing')), false);
+  assert.equal(isDisconnected(new Error('net::ERR_BLOCKED_BY_CLIENT')), false);
+});
 
 test('codexHome honours CODEX_HOME and falls back to ~/.codex', () => {
   assert.equal(codexHome({ CODEX_HOME: '/tmp/example-codex' }), '/tmp/example-codex');
